@@ -31,11 +31,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, accuracy_score
 
-# import tensorflow as tf
+import tensorflow as tf
 from sklearn.linear_model import LogisticRegression
 # from tensorflow.keras.layers import Input, Dense, Dropout
 # from tensorflow.keras.models import Model
-# from tensorflow.keras.optimizers import SGD,Nadam,Adam
+from tensorflow.keras.optimizers import Adam
 
 """## Configure kaggle"""
 
@@ -54,9 +54,24 @@ from sklearn.linear_model import LogisticRegression
 
 """### Read in data"""
 
+
+#unzipping the zip file - got code from https://www.geeksforgeeks.org/unzipping-files-in-python/ 
+
+# importing the zipfile module
+from zipfile import ZipFile
+  
+# loading the temp.zip and creating a zip object
+with ZipFile("/Users/TheBigLipper/LifschitzDavid/machinelearningapplied/Week_7_HW/train_transaction.csv.zip", 'r') as zObject:
+  
+    # Extracting all the members of the zip 
+    # into a specific location.
+    zObject.extractall(
+        path="Week_7_HW")
+
 np.random.seed(314159)
 train_txn = pd.read_csv('Week_7_HW/train_transaction.csv')
 
+print("we have extracted the zip file")
 """# Starting David's Work
 
 #Getting the right columns to use
@@ -362,7 +377,6 @@ print(len(x_test_oh_df_scaled[0]))
 input_shape = x_train_oh_df.values.shape
 input_shape
 
-input_shape = Input(shape=(x_train_oh_df.values.shape[1],))
 model = tf.keras.models.Sequential([
      tf.keras.layers.Dense(128, activation = 'tanh',input_shape=(140,)),
      tf.keras.layers.Dense(64, activation = 'tanh'),
@@ -380,21 +394,21 @@ history = model.fit(x_train_oh_df_scaled, y_train_df.values, validation_data=[x_
 
 print(history.history.keys()) # graph maker taken from https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/ 
 # graph accuracy
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
-plt.title('accuracy')
-plt.ylabel('val_accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'validation'], loc='best')
-plt.show()
-# graph loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'], loc='best')
-plt.show()
+# plt.plot(history.history['accuracy'])
+# plt.plot(history.history['val_accuracy'])
+# plt.title('accuracy')
+# plt.ylabel('val_accuracy')
+# plt.xlabel('epoch')
+# plt.legend(['train', 'validation'], loc='best')
+# plt.show()
+# # graph loss
+# plt.plot(history.history['loss'])
+# plt.plot(history.history['val_loss'])
+# plt.title('model loss')
+# plt.ylabel('loss')
+# plt.xlabel('epoch')
+# plt.legend(['train', 'val'], loc='best')
+# plt.show()
 
 y_pred_k = model.predict(x_test_oh_df_scaled)
 
@@ -412,13 +426,13 @@ roc_auc_score(y_test_df, y_pred_k)
 
 """Graph generation from https://stackoverflow.com/questions/65249043/difference-between-sklearn-roc-auc-score-and-sklearn-plot-roc-curve """
 
-from sklearn.metrics import roc_curve, auc
-fpr, tpr, _ = roc_curve(y_test_df, y_pred_k)
-roc_auc = auc(fpr, tpr)
-plt.plot(fpr, tpr, label='AUC = ' + str(round(roc_auc, 2)))
-plt.legend(loc='lower right')
-plt.ylabel('True Positive Rate')
-plt.xlabel('False Positive Rate')
+# from sklearn.metrics import roc_curve, auc
+# fpr, tpr, _ = roc_curve(y_test_df, y_pred_k)
+# roc_auc = auc(fpr, tpr)
+# plt.plot(fpr, tpr, label='AUC = ' + str(round(roc_auc, 2)))
+# plt.legend(loc='lower right')
+# plt.ylabel('True Positive Rate')
+# plt.xlabel('False Positive Rate')
 
 """# ROC SCORE OF 0.88 !!!
 
@@ -426,195 +440,8 @@ plt.xlabel('False Positive Rate')
 """
 
 model.save('week_7_model_ROC_88.h5')
-from google.colab import files
-files.download('week_7_model_ROC_88.h5')
-
-"""#now trying SimpleImputer instead of fillna()"""
-
-from sklearn.impute import SimpleImputer
-imp_mean = SimpleImputer(missing_values=np.nan, strategy='median')
-
-from imblearn.over_sampling import SMOTE
-#my thought is that random state should be the same as for train test split
-sm = SMOTE(random_state = 42)
-
-#trying out other columns:
-cols = corrs.copy()
-for i in ['ProductCD', 'card4', 'card6', 'P_emaildomain', 'R_emaildomain']:
-  cols.remove(i)
-
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler()
-
-train_txn_copy = train_txn.copy()
-
-y_df = train_txn_copy['isFraud']
-x_df = train_txn_copy
-# remove the target label from our training dataframe...
-del x_df['isFraud']
-#remove dist2 column bc it's mainly filled with nans
-del x_df['dist2']
-
-
-#After using google sheets (https://docs.google.com/spreadsheets/d/1YGZO8t0BfFJXizhumdIZzwPd1Mszso8u63SZfrVs6JA/edit?usp=sharing)
-# to check which columns don't exist in test data, i got "charge card" and "R_emaildomain_windstream.net". 
-#Turns out this is becuase of the train_test split, 
-#so i changed the test_size to 0.35 for val/test from train, and for test from val, 
-#and that gives 163 columns after one hotting the dataframes
-# stratify on the target column to keep the approximate balance of positive examples since it's so imbalanced
-x_train_df, x_test_df, y_train_df, y_test_df = train_test_split(x_df, y_df, test_size=0.35, stratify=y_df,random_state=42)
-x_val_df, x_test_df, y_val_df, y_test_df = train_test_split(x_test_df, y_test_df, test_size=0.35, stratify=y_test_df,random_state=42)
-#normalize - code from dave's colab
-x_train_norm_df = x_train_df[corrs] #using the columns from the top
-x_train_norm_df.TransactionAmt = (x_train_norm_df.TransactionAmt - x_train_df.TransactionAmt.mean()) / x_train_df.TransactionAmt.std()
-#One hot code
-x_train_oh_df = pd.get_dummies(x_train_norm_df)
-# for i in cols:
-#   print(i)
-x_train_oh_df = x_train_oh_df[cols]
-#simpleImputer
-x_train_oh_df = imp_mean.fit_transform(x_train_oh_df)
-# x_train_oh_df = x_train_oh_df.fillna(-1.5)
-x_train_oh_df_scaled = x_train_oh_df.copy()
-# apply scaler techniques
-x_train_oh_df_scaled = scaler.fit_transform(x_train_oh_df_scaled)
-
-#SMOTE
-# x_train_oh_df, y_train_df = sm.fit_resample(x_train_oh_df,y_train_df)
-
-
-  
-
-
-# Validation data 
-x_val_norm_df = x_val_df[corrs] #using the columns from the top
-x_val_norm_df.TransactionAmt = (x_val_norm_df.TransactionAmt - x_val_df.TransactionAmt.mean()) / x_val_df.TransactionAmt.std()
-#One hot code
-x_val_oh_df = pd.get_dummies(x_val_norm_df)
-x_val_oh_df = x_val_oh_df[cols]
-# x_val_oh_df = x_val_oh_df.fillna(-1.5)
-#simpleImputer
-imp_mean = SimpleImputer(missing_values=np.nan, strategy='median')
-x_val_oh_df = imp_mean.fit_transform(x_val_oh_df)
-
-# apply scaler techniques
-x_val_oh_df_scaled = x_val_oh_df.copy()
-scaler = StandardScaler()
-x_val_oh_df_scaled = scaler.fit_transform(x_val_oh_df_scaled)
-#SMOTE
-# x_val_oh_df, y_val_df = sm.fit_resample(x_val_oh_df,y_val_df)
-
-#TEST DATA
-x_test_norm_df = x_test_df[corrs]
-x_test_norm_df.TransactionAmt = (x_test_df.TransactionAmt - x_train_df.TransactionAmt.mean()) / x_train_df.TransactionAmt.std()
-x_test_norm_df
-
-x_test_oh_df = pd.get_dummies(x_test_norm_df)
-x_test_oh_df = x_test_oh_df[cols]
-# x_test_oh_df = x_test_oh_df.fillna(-1.5)
-
-#simpleImputer
-imp_mean = SimpleImputer(missing_values=np.nan, strategy='median')
-x_test_oh_df = imp_mean.fit_transform(x_test_oh_df)
-
-# apply scaler techniques
-x_test_oh_df_scaled = x_test_oh_df.copy()
-scaler = StandardScaler()
-x_test_oh_df_scaled = scaler.fit_transform(x_test_oh_df_scaled)
-
-#SMOTE
-# x_test_oh_df, y_test_df = sm.fit_resample(x_test_oh_df,y_test_df)
-
-
-print(len(x_train_oh_df_scaled[0]))
-print(len(x_val_oh_df_scaled[0]))
-print(len(x_test_oh_df_scaled[0]))
-
-#simpleImputer
-imp_mean = SimpleImputer(missing_values=np.nan, strategy='median')
-x_test_oh_df = imp_mean.fit_transform(x_test_oh_df)
-
-# apply scaler techniques
-x_test_oh_df_scaled = x_test_oh_df.copy()
-scaler = StandardScaler()
-x_test_oh_df_scaled = scaler.fit_transform(x_test_oh_df_scaled)
-
-x_test_oh_df_scaled
-
-
-
-# input_shape = Input(shape=(x_train_oh_df.values.shape[1],))
-model = tf.keras.models.Sequential([
-     tf.keras.layers.Dense(512, activation = 'tanh',input_shape=(140,)),
-     tf.keras.layers.Dense(256, activation = 'tanh'),
-     tf.keras.layers.Dense(128, activation = 'tanh'),
-     tf.keras.layers.Dense(64, activation = 'tanh'),
-     tf.keras.layers.Dense(32, activation = 'tanh'),
-     tf.keras.layers.Dense(16, activation = 'tanh'),
-     tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)])
-
-# inputs = Input(shape=(x_train_oh_df.values.shape[1],))
-# x = tf.keras.layers.Dense(4, activation=tf.nn.tanh)(inputs)
-# preds = Dense(1, activation='sigmoid')(x)
-# model = Model(inputs=inputs, outputs=preds)
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
-model.summary()
-def scheduler(epoch, lr):
-   if epoch < 5:
-     return lr
-   elif epoch > 13:
-      return lr
-   else:
-     return lr * tf.math.exp(-0.1)
-callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
-
-history = model.fit(x_train_oh_df_scaled, y_train_df.values, validation_data=[x_val_oh_df_scaled,y_val_df],callbacks =[callback], batch_size=256, epochs=25, shuffle=False)
-
-
-
-print(history.history.keys()) # graph maker taken from https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/ 
-# graph accuracy
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
-plt.title('accuracy')
-plt.ylabel('val_accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'validation'], loc='best')
-plt.show()
-# graph loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'], loc='best')
-plt.show()
-
-y_pred_k = model.predict(x_test_oh_df_scaled)
-
-y_pred_k
-
-temp = []
-for i in np.round(y_pred_k.copy()):
-  temp.append(int(i))
-
-from sklearn.metrics import classification_report
-rounded = temp
-print(classification_report(y_test_df, temp))
-
-roc_auc_score(y_test_df, y_pred_k)
-
-"""Graph generation from https://stackoverflow.com/questions/65249043/difference-between-sklearn-roc-auc-score-and-sklearn-plot-roc-curve """
-
-from sklearn.metrics import roc_curve, auc
-fpr, tpr, _ = roc_curve(y_test_df, y_pred_k)
-roc_auc = auc(fpr, tpr)
-plt.plot(fpr, tpr, label='AUC = ' + str(round(roc_auc, 2)))
-plt.legend(loc='lower right')
-plt.ylabel('True Positive Rate')
-plt.xlabel('False Positive Rate')
-
-
+# from google.colab import files
+# files.download('week_7_model_ROC_88.h5')
 
 y_pred_k = y_pred_k > 0.5
 accuracy_score(y_test_df, np.round(y_pred_k))
