@@ -14,6 +14,28 @@ model = tf.keras.models.load_model('week_7_model_ROC_88.h5')
 
 import pandas as pd
 # files.upload()
+#unzipping the zip file - got code from https://www.geeksforgeeks.org/unzipping-files-in-python/ 
+
+# importing the zipfile module
+from zipfile import ZipFile
+  
+# loading the temp.zip and creating a zip object
+with ZipFile("Week_7_HW/IS_x_test_df.csv.zip", 'r') as zObject:
+  
+    # Extracting specific file in the zip
+    # into a specific location.
+    zObject.extract(
+        "IS_x_test_df.csv", path="Week_7_HW")
+zObject.close()
+
+with ZipFile("Week_7_HW/IS_y_test_df.csv.zip", 'r') as zObject:
+  
+    # Extracting specific file in the zip
+    # into a specific location.
+    zObject.extract(
+        "IS_y_test_df.csv", path="Week_7_HW")
+zObject.close()
+
 
 X = pd.read_csv('IS_x_test_df.csv')
 Y = pd.read_csv('IS_y_test_df.csv')

@@ -422,7 +422,7 @@ from sklearn.metrics import classification_report
 rounded = temp
 print(classification_report(y_test_df, temp))
 
-roc_auc_score(y_test_df, y_pred_k)
+print(roc_auc_score(y_test_df, y_pred_k))
 
 """Graph generation from https://stackoverflow.com/questions/65249043/difference-between-sklearn-roc-auc-score-and-sklearn-plot-roc-curve """
 
@@ -444,4 +444,4 @@ model.save('week_7_model_ROC_88.h5')
 # files.download('week_7_model_ROC_88.h5')
 
 y_pred_k = y_pred_k > 0.5
-accuracy_score(y_test_df, np.round(y_pred_k))
+print(accuracy_score(y_test_df, np.round(y_pred_k)))
